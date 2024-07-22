@@ -1,0 +1,46 @@
+{
+    "name": "lsst-epo/craft-next-js-builds",
+    "description": "Invoke Next.js page builds from Craft.",
+    "type": "craft-plugin",
+    "version": "1.1.3",
+    "keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "craft-plugin",
+        "next builds"
+    ],
+    "support": {
+        "docs": "???",
+        "issues": "???"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "LSST EPO",
+            "homepage": "https://github.com/lsst-epo"
+        },
+        {
+            "name": "Cast Iron Coding",
+            "homepage": "https://castironcoding.com/"
+        }
+    ],
+    "require": {
+        "craftcms/cms": "^4.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+          "lsst\\nextbuilds\\": "src/"
+        }
+    },
+    "extra": {
+        "name": "Craft Next.js Builds",
+        "handle": "next-builds",
+        "documentationUrl": "???",
+        "changelogUrl": "???",
+        "components": {
+            "request": "lsst\\nextbuilds\\services\\Request"
+        },
+        "class": "lsst\\nextbuilds\\NextBuilds"
+    }
+}
