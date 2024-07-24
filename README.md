@@ -2,7 +2,7 @@
 
 Start Next.js page builds from Craft.
 
-![Screenshot](resources/img/plugin-logo.png)
+![Screenshot](resources/img/icon.svg)
 
 ## Requirements
 
