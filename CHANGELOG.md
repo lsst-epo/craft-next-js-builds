@@ -8,11 +8,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Changed
 - Changed Craft::info() to Craft::warning() so it gets picked up in non-devMode
 
-
-## 1.2.0 - 2024-7-22
-### Changed
-- Removed `castiron` from namespace, removed authorship comments, etc.
-
 ## 1.2.0 - 2024-7-22
 ### Changed
 - Removed `castiron` from namespace, removed authorship comments, etc.
