@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - New event listener for custom event for triggering revalidates
 - New command for running check to look for entries that have changed their status
 
+## 1.2.1 - 2024-10-22
+### Changed
+- Changed Craft::info() to Craft::warning() so it gets picked up in non-devMode
+
 ## 1.2.0 - 2024-7-22
 ### Changed
 - Removed `castiron` from namespace, removed authorship comments, etc.
