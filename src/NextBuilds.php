@@ -21,9 +21,15 @@ use craft\services\Plugins;
 use craft\events\PluginEvent;
 use lsst\nextbuilds\services\Request as NextRequestService;
 use craft\services\Structures;
+use lsst\nextbuilds\services\ElementStatusEvents;
+use lsst\nextbuilds\events\StatusChangeEvent;
 use yii\base\Event;
 use benf\neo\elements\Block;
 
+use yii\caching\CacheInterface;
+use craft\console\Application as CraftConsoleApp;
+use lsst\nextbuilds\commands\ScheduledElements;
+use craft\services\Elements;
 /**
  * Class NextBuilds
  *
@@ -35,6 +41,7 @@ use benf\neo\elements\Block;
  */
 class NextBuilds extends Plugin
 {
+
     // Static Properties
     // =========================================================================
 
@@ -76,6 +83,24 @@ class NextBuilds extends Plugin
     {
         parent::init();
         self::$plugin = $this;
+        $this->initializeElementStatusEvents();
+
+        Event::on(
+            ElementStatusEvents::class,
+            ElementStatusEvents::EVENT_STATUS_CHANGED,
+            function(StatusChangeEvent $event) {
+                $newStatus   = $event->element->getStatus();
+                $entry = $event->element;
+                if($this->settings->activeSections[$entry->section->handle] &&
+                    !ElementHelper::isDraftOrRevision($entry) &&
+                    !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
+                    !ElementHelper::rootElement($entry)->isProvisionalDraft &&
+                    !$entry->resaving && $entry instanceof \craft\elements\Entry && $newStatus == Entry::STATUS_LIVE) {
+                        $revalidateMenu = ($entry->type->handle == "pages");
+                        $this->request->buildPagesFromEntry($entry, $revalidateMenu);
+                }
+            }
+        );
 
         Event::on(
             Plugins::class,
@@ -189,6 +214,20 @@ class NextBuilds extends Plugin
                 }
             }
         );
+    }
+
+    /**
+     * @return void
+     */
+    protected function initializeElementStatusEvents(): void
+    {
+        Event::on(Elements::class, Elements::EVENT_BEFORE_SAVE_ELEMENT, [ElementStatusEvents::class, 'rememberPreviousStatus']);
+        Event::on(Elements::class, Elements::EVENT_AFTER_SAVE_ELEMENT, [ElementStatusEvents::class, 'fireEventOnChange']);
+
+        if (Craft::$app instanceof CraftConsoleApp) {
+            Craft::$container->set(CacheInterface::class, Craft::$app->getCache());
+            Craft::$app->controllerMap['element-status-events'] = ScheduledElements::class;
+        }
     }
 
     // Protected Methods

@@ -45,7 +45,7 @@ class Request extends Component
             $params["tags"] = ["navigation"];
         }
 		$requestUrl = $endpoint . '?' . http_build_query($params);
-        Craft::warning("Request URL: " .$requestUrl, "REVALIDATE_STATUS"); // for tracking revalidate events
+        Craft::warning("Request URL: " .$requestUrl, "REVALIDATE_STATUS"); // warning severity so this gets logged in production
 
 		try {
 			$client->request('GET', $requestUrl, []);
