@@ -14,12 +14,6 @@
         "docs": "???",
         "issues": "???"
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/lsst-epo/post-date-entry-event.git"
-        }
-    ],
     "license": "MIT",
     "authors": [
         {
