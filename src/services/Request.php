@@ -10,8 +10,6 @@ namespace lsst\nextbuilds\services;
 use Craft;
 use lsst\nextbuilds\NextBuilds;
 use craft\base\Component;
-use craft\elements\Entry;
-use craft\helpers\Session;
 use GuzzleHttp\Client;
 
 /**
@@ -27,18 +25,18 @@ class Request extends Component
     // =========================================================================
 
 	/**
-	 * @param Entry $entry
+	 * @param String uri
 	 * @return void
 	 * @throws \GuzzleHttp\Exception\GuzzleException
 	 */
-	public function buildPagesFromEntry(Entry $entry, string $revalidateMenu)
+	public function buildPagesFromEntry(string $uri, bool $revalidateMenu)
 	{
 		$settings = NextBuilds::getInstance()->getSettings();
 		$client = new Client();
 
         $endpoint = $this->getSettingsData($settings->nextApiBaseUrl) . self::NEXT_ENDPOINT_REVALIDATE;
 		$params = [
-			'uri' => $entry->uri,
+			'uri' => $uri,
 			'secret' => $this->getSettingsData($settings->nextSecretToken)
 		];
         if ($revalidateMenu) {
@@ -51,7 +49,7 @@ class Request extends Component
 			$client->request('GET', $requestUrl, []);
 			$isConsoleRequest = Craft::$app->getRequest()->getIsConsoleRequest();
 			if (!$isConsoleRequest) {
-				Craft::$app->session->setNotice('Requesting revalidation: ' . $entry->uri);
+				Craft::$app->session->setNotice('Requesting revalidation: ' . $uri);
 			}
 		} catch (\Exception $exception) {
             Craft::error($exception->getMessage(), "REVALIDATE_STATUS");

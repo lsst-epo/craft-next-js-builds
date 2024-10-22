@@ -63,6 +63,8 @@ class NextBuilds extends Plugin
      */
     public string $schemaVersion = '1.0.0';
 
+    private string $homeUri = "__home__";
+
     /**
      * @var bool
      */
@@ -98,8 +100,14 @@ class NextBuilds extends Plugin
                     !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
                     !ElementHelper::rootElement($entry)->isProvisionalDraft &&
                     $newStatus == Entry::STATUS_LIVE) {
+
+                    if($entry->type->handle == "callout") {
+                        $this->request->buildPagesFromEntry($this->homeUri, false);
+                    } else if ($entry->uri != null) {
                         $revalidateMenu = ($entry->type->handle == "pages");
-                        $this->request->buildPagesFromEntry($entry, $revalidateMenu);
+                        $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
+                    }
+
                 }
             }
         );
@@ -138,11 +146,12 @@ class NextBuilds extends Plugin
                     !ElementHelper::isDraftOrRevision($entry) &&
                     !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
                     !ElementHelper::rootElement($entry)->isProvisionalDraft &&
-                    !$entry->resaving
+                    !$entry->resaving &&
+                    $entry->uri != null
                 ) {
                     $revalidateMenu = ($entry->type->handle == "pages");
                     Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
-                        $this->request->buildPagesFromEntry($entry, $revalidateMenu);
+                        $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
                     });
                 }
 		    }
@@ -157,11 +166,12 @@ class NextBuilds extends Plugin
                     $this->settings->activeSections[$entry->section->handle] &&
                     !ElementHelper::isDraftOrRevision($entry) &&
                     !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
-                    !ElementHelper::rootElement($entry)->isProvisionalDraft
+                    !ElementHelper::rootElement($entry)->isProvisionalDraft &&
+                    $entry->uri != null
                 ) {
                     $revalidateMenu = ($entry->type->handle == "pages");
                     Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
-                        $this->request->buildPagesFromEntry($entry, $revalidateMenu);
+                        $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
                     });
                 }
             }
@@ -188,11 +198,12 @@ class NextBuilds extends Plugin
                     $this->settings->activeSections[$handle] &&
                     !ElementHelper::isDraftOrRevision($entry) &&
                     !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
-                    !ElementHelper::rootElement($entry)->isProvisionalDraft
+                    !ElementHelper::rootElement($entry)->isProvisionalDraft &&
+                    $entry->uri != null
                 ) {
                     $revalidateMenu = ($handle == "pages");
                     Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
-                        $this->request->buildPagesFromEntry($entry, $revalidateMenu);
+                        $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
                     });
                 }
             }
@@ -207,11 +218,12 @@ class NextBuilds extends Plugin
                     $this->settings->activeSections[$entry->section->handle] &&
                     !ElementHelper::isDraftOrRevision($entry) &&
                     !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
-                    !ElementHelper::rootElement($entry)->isProvisionalDraft
+                    !ElementHelper::rootElement($entry)->isProvisionalDraft &&
+                    $entry->uri != null
                 ) {
                     $revalidateMenu = ($entry->type->handle == "pages");
                     Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
-                        $this->request->buildPagesFromEntry($entry, $revalidateMenu);
+                        $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
                     });
                 }
             }
