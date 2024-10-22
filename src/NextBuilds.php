@@ -91,11 +91,13 @@ class NextBuilds extends Plugin
             function(StatusChangeEvent $event) {
                 $newStatus   = $event->element->getStatus();
                 $entry = $event->element;
-                if($this->settings->activeSections[$entry->section->handle] &&
+                if($entry instanceof \craft\elements\Entry &&
+                    !$entry->resaving &&
+                    $this->settings->activeSections[$entry->section->handle] &&
                     !ElementHelper::isDraftOrRevision($entry) &&
                     !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
                     !ElementHelper::rootElement($entry)->isProvisionalDraft &&
-                    !$entry->resaving && $entry instanceof \craft\elements\Entry && $newStatus == Entry::STATUS_LIVE) {
+                    $newStatus == Entry::STATUS_LIVE) {
                         $revalidateMenu = ($entry->type->handle == "pages");
                         $this->request->buildPagesFromEntry($entry, $revalidateMenu);
                 }
