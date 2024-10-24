@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.0 - 2024-10-21
+### Added
+- New custom event for detecting entry status changes 
+- New event listener for custom event for triggering revalidates
+- New command for running check to look for entries that have changed their status
+
 ## 1.2.1 - 2024-10-22
 ### Changed
 - Changed Craft::info() to Craft::warning() so it gets picked up in non-devMode
