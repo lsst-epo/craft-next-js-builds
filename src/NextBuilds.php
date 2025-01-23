@@ -8,6 +8,7 @@
 
 namespace lsst\nextbuilds;
 
+use Exception;
 use lsst\nextbuilds\services\Request as RequestService;
 use lsst\nextbuilds\models\Settings;
 
@@ -93,21 +94,26 @@ class NextBuilds extends Plugin
             function(StatusChangeEvent $event) {
                 $newStatus   = $event->element->getStatus();
                 $entry = $event->element;
-                if($entry instanceof \craft\elements\Entry &&
-                    !$entry->resaving &&
-                    $this->settings->activeSections[$entry->section->handle] &&
-                    !ElementHelper::isDraftOrRevision($entry) &&
-                    !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
-                    !ElementHelper::rootElement($entry)->isProvisionalDraft &&
-                    $newStatus == Entry::STATUS_LIVE) {
 
-                    if($entry->type->handle == "callout") {
-                        $this->request->buildPagesFromEntry($this->homeUri, false);
-                    } else if ($entry->uri != null) {
-                        $revalidateMenu = ($entry->type->handle == "pages");
-                        $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
+                try {
+                    if ($entry instanceof \craft\elements\Entry &&
+                        !$entry->resaving &&
+                        $this->settings->activeSections[$entry->section->handle] &&
+                        !ElementHelper::isDraftOrRevision($entry) &&
+                        !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
+                        !ElementHelper::rootElement($entry)->isProvisionalDraft &&
+                        $newStatus == Entry::STATUS_LIVE) {
+
+                        if ($entry->type->handle == "callout") {
+                            $this->request->buildPagesFromEntry($this->homeUri, false);
+                        } else if ($entry->uri != null) {
+                            $revalidateMenu = ($entry->type->handle == "pages");
+                            $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
+                        }
+
                     }
-
+                } catch (Exception $exception) {
+                    Craft::error($exception->getMessage(), "REVALIDATE_STATUS");
                 }
             }
         );
@@ -141,19 +147,24 @@ class NextBuilds extends Plugin
 		    function (ModelEvent $event) {
 			    $entry = $event->sender;
 
-                if (
-                    $this->settings->activeSections[$entry->section->handle] &&
-                    !ElementHelper::isDraftOrRevision($entry) &&
-                    !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
-                    !ElementHelper::rootElement($entry)->isProvisionalDraft &&
-                    !$entry->resaving &&
-                    $entry->uri != null
-                ) {
-                    $revalidateMenu = ($entry->type->handle == "pages");
-                    Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
-                        $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
-                    });
+                try {
+                    if (
+                        $this->settings->activeSections[$entry->section->handle] &&
+                        !ElementHelper::isDraftOrRevision($entry) &&
+                        !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
+                        !ElementHelper::rootElement($entry)->isProvisionalDraft &&
+                        !$entry->resaving &&
+                        $entry->uri != null
+                    ) {
+                        $revalidateMenu = ($entry->type->handle == "pages");
+                        Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
+                            $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
+                        });
+                    }
+                } catch(Exception $exception) {
+                    Craft::error($exception->getMessage(), "REVALIDATE_STATUS");
                 }
+
 		    }
 	    );
 
@@ -162,17 +173,22 @@ class NextBuilds extends Plugin
             Entry::EVENT_AFTER_DELETE,
             function (Event $event) {
                 $entry = $event->sender;
-                if (
-                    $this->settings->activeSections[$entry->section->handle] &&
-                    !ElementHelper::isDraftOrRevision($entry) &&
-                    !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
-                    !ElementHelper::rootElement($entry)->isProvisionalDraft &&
-                    $entry->uri != null
-                ) {
-                    $revalidateMenu = ($entry->type->handle == "pages");
-                    Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
-                        $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
-                    });
+
+                try {
+                    if (
+                        $this->settings->activeSections[$entry->section->handle] &&
+                        !ElementHelper::isDraftOrRevision($entry) &&
+                        !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
+                        !ElementHelper::rootElement($entry)->isProvisionalDraft &&
+                        $entry->uri != null
+                    ) {
+                        $revalidateMenu = ($entry->type->handle == "pages");
+                        Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
+                            $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
+                        });
+                    }
+                } catch (Exception $exception) {
+                    Craft::error($exception->getMessage(), "REVALIDATE_STATUS");
                 }
             }
         );
