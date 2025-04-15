@@ -18,6 +18,7 @@ use craft\elements\Entry;
 use craft\events\MoveElementEvent;
 use craft\events\ModelEvent;
 use craft\helpers\ElementHelper;
+use craft\helpers\DateTimeHelper;
 use craft\services\Plugins;
 use craft\events\PluginEvent;
 use lsst\nextbuilds\services\Request as NextRequestService;
@@ -149,6 +150,7 @@ class NextBuilds extends Plugin
 
                 try {
                     if (
+                        $entry->postDate < DateTimeHelper::now() &&
                         $this->settings->activeSections[$entry->section->handle] &&
                         !ElementHelper::isDraftOrRevision($entry) &&
                         !($entry->duplicateOf && $entry->getIsCanonical() && !$entry->updatingFromDerivative) &&
