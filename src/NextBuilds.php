@@ -30,6 +30,7 @@ use benf\neo\elements\Block;
 
 use yii\caching\CacheInterface;
 use craft\console\Application as CraftConsoleApp;
+use craft\helpers\App;
 use lsst\nextbuilds\commands\ScheduledElements;
 use craft\services\Elements;
 /**
@@ -161,6 +162,16 @@ class NextBuilds extends Plugin
                         $revalidateMenu = ($entry->type->handle == "pages");
                         Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
                             $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
+                            try {
+                                $projectId = App::env('GCP_PROJECT_ID');
+                                $urlMap = App::env('CDN_URL_MAP');
+                                $host = App::env('WEB_BASE_URL');
+                                $path = '/*'; # $entry->uri;
+                                $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
+                            } catch (\Throwable $th) {
+                                Craft::error($th, "INVALIDATE_STATUS");
+                            }
+                            
                         });
                     }
                 } catch(Exception $exception) {

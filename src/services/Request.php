@@ -12,6 +12,8 @@ use lsst\nextbuilds\NextBuilds;
 use craft\base\Component;
 use GuzzleHttp\Client;
 
+use Google\Cloud\Compute\V1\{CacheInvalidationRule, InvalidateCacheUrlMapRequest, Client\UrlMapsClient};
+
 /**
  * @author    Cast Iron Coding
  * @package   NextBuilds
@@ -58,6 +60,48 @@ class Request extends Component
 				Craft::$app->session->setError('Incremental rebuild failed. Frontend will update after next revalidation interval.');
 			}
 		}
+	}
+
+	public function invalidateCDNCache(string $projectId, string $urlMapName, string $path = '/*', string|null $host = null): bool
+	{
+		try {
+			$urlMapsClient = new UrlMapsClient();
+	
+			$invalidateCacheRule = new CacheInvalidationRule();
+			$invalidateCacheRule->setPath($path);
+		
+			if ($host != null) {
+				$invalidateCacheRule->setHost($host);
+			}
+		
+			$invalidateCacheRequest = new InvalidateCacheUrlMapRequest([
+				'project' => $projectId,
+				'urlMap' => $urlMapName,
+				'cacheInvalidationRuleResource' => $invalidateCacheRule,
+			]);
+		} catch (\Throwable $th) {
+			Craft::error("UrlMapsClient error: " . $th->getMessage() . "\n" . $th->getTraceAsString(), "INVALIDATE_STATUS");
+			return false;
+		}
+		
+	
+		try {
+			$operation = $urlMapsClient->invalidateCache($invalidateCacheRequest);
+	
+			$operation->pollUntilComplete();
+	
+			if ($operation->getError()) {
+				Craft::warning("Cache invalidation failed: " . $operation->getError()->getMessage(), "INVALIDATE_STATUS");
+			} else {
+				Craft::warning("Cache invalidation success for URL MAP " . $urlMapName . " and path " . $path, "INVALIDATE_STATUS");
+			}
+		} catch (\Throwable $th) {
+			Craft::error("CDN Invalidation error: " . $th->getMessage() . "\n" . $th->getTraceAsString(), "INVALIDATE_STATUS");
+		} finally {
+			$urlMapsClient->close();
+		}
+
+		return true;
 	}
 
 	// Protected Methods
