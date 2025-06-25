@@ -76,8 +76,8 @@ class Request extends Component
 		
 			$invalidateCacheRequest = new InvalidateCacheUrlMapRequest([
 				'project' => $projectId,
-				'urlMap' => $urlMapName,
-				'cacheInvalidationRuleResource' => $invalidateCacheRule,
+				'url_map' => $urlMapName,
+				'cache_invalidation_rule_resource' => $invalidateCacheRule
 			]);
 		} catch (\Throwable $th) {
 			Craft::error("UrlMapsClient error: " . $th->getMessage() . "\n" . $th->getTraceAsString(), "INVALIDATE_STATUS");
