@@ -168,6 +168,10 @@ class NextBuilds extends Plugin
                                 $urlMap = App::env('CDN_URL_MAP');
                                 $host = App::env('WEB_BASE_URL');
                                 $path = $entry->uri; // /* would be everything
+
+                                if (!str_starts_with($path, '/')) {
+                                    $path = '/' . $path;
+                                }
                                 $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
                             } catch (\Throwable $th) {
                                 Craft::error($th->getMessage(), "INVALIDATE_STATUS");
