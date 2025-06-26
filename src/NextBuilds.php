@@ -167,7 +167,7 @@ class NextBuilds extends Plugin
                                 $projectId = App::env('GCP_PROJECT_ID');
                                 $urlMap = App::env('CDN_URL_MAP');
                                 $host = App::env('WEB_BASE_URL');
-                                $path = '/*'; # $entry->uri;
+                                $path = $entry->uri; // /* would be everything
                                 $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
                             } catch (\Throwable $th) {
                                 Craft::error($th->getMessage(), "INVALIDATE_STATUS");
