@@ -164,23 +164,23 @@ class NextBuilds extends Plugin
                             $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
 
                             if (!$this->settings->enableCDNCacheInvalidation) {
-                                return;
-                            }
-                            Craft::warning("Attempting to invalidate cache", "INVALIDATE_STATUS");
-                            try {
-                                $projectId = App::env('GCP_PROJECT_ID');
-                                $urlMap = App::env('CDN_URL_MAP');
-                                $host = App::env('WEB_BASE_URL');
-                                $path = $entry->uri; // /* would be everything
+                                Craft::warning("Not invalidating CDN cache due to plugin settings", "INVALIDATE_STATUS");
+                            } else {
+                                Craft::warning("Attempting to invalidate CDN cache", "INVALIDATE_STATUS");
+                                try {
+                                    $projectId = App::env('GCP_PROJECT_ID');
+                                    $urlMap = App::env('CDN_URL_MAP');
+                                    $host = App::env('WEB_BASE_URL');
+                                    $path = $entry->uri; // /* would be everything
 
-                                if (!str_starts_with($path, '/')) {
-                                    $path = '/' . $path;
+                                    if (!str_starts_with($path, '/')) {
+                                        $path = '/' . $path;
+                                    }
+                                    $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
+                                } catch (\Throwable $th) {
+                                    Craft::error($th->getMessage(), "INVALIDATE_STATUS");
                                 }
-                                $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
-                            } catch (\Throwable $th) {
-                                Craft::error($th->getMessage(), "INVALIDATE_STATUS");
                             }
-                            
                         });
                     }
                 } catch(Exception $exception) {

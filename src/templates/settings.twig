@@ -28,11 +28,11 @@
     suggestEnvVars: true
 }) }}
 
-{{ forms.autosuggestField({
+{{ forms.checkbox({
     label: "Enable Google Cloud CDN Cache Invalidation on Save",
     name: 'enableCDNCacheInvalidation',
-    value: settings.enableCDNCacheInvalidation,
-    suggestEnvVars: true
+    value: true,
+    checked: settings.enableCDNCacheInvalidation ?? false,
 }) }}
 
 <div class="field">

@@ -49,8 +49,8 @@ class Settings extends Model
     public function rules(): array
     {
         return [
-            [['nextApiBaseUrl', 'nextSecretToken', 'enableCDNCacheInvalidation'], 'required'],
-	        [['activeSections'], 'default']
+            [['nextApiBaseUrl', 'nextSecretToken'], 'required'],
+	        [['activeSections', 'enableCDNCacheInvalidation'], 'default']
         ];
     }
 }
