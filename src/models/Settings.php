@@ -35,6 +35,11 @@ class Settings extends Model
 	 */
 	public $activeSections = [];
 
+    /**
+	 * @var bool
+	 */
+	public $enableCDNCacheInvalidation = false; 
+
     // Public Methods
     // =========================================================================
 
@@ -44,7 +49,7 @@ class Settings extends Model
     public function rules(): array
     {
         return [
-            [['nextApiBaseUrl', 'nextSecretToken'], 'required'],
+            [['nextApiBaseUrl', 'nextSecretToken', 'enableCDNCacheInvalidation'], 'required'],
 	        [['activeSections'], 'default']
         ];
     }

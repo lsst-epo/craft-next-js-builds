@@ -162,6 +162,10 @@ class NextBuilds extends Plugin
                         $revalidateMenu = ($entry->type->handle == "pages");
                         Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
                             $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
+
+                            if (!$this->settings->enableCDNCacheInvalidation) {
+                                return;
+                            }
                             Craft::warning("Attempting to invalidate cache", "INVALIDATE_STATUS");
                             try {
                                 $projectId = App::env('GCP_PROJECT_ID');
