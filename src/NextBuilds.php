@@ -162,24 +162,19 @@ class NextBuilds extends Plugin
                         $revalidateMenu = ($entry->type->handle == "pages");
                         Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
                             $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
-
-                            if (!$this->settings->enableCDNCacheInvalidation) {
+                            if (!is_null($this->settings->getEnableCDNCacheInvalidation()))
+                            {
+                                if (!$this->settings->getEnableCDNCacheInvalidation())
+                                {
+                                    Craft::warning("Not invalidating CDN cache due to plugin settings set by environment", "INVALIDATE_STATUS");
+                                } else {
+                                    $this->attemptCDNInvalidateAPICall($entry);
+                                }
+                            }
+                            elseif (!$this->settings->enableCDNCacheInvalidation) {
                                 Craft::warning("Not invalidating CDN cache due to plugin settings", "INVALIDATE_STATUS");
                             } else {
-                                Craft::warning("Attempting to invalidate CDN cache", "INVALIDATE_STATUS");
-                                try {
-                                    $projectId = App::env('GCP_PROJECT_ID');
-                                    $urlMap = App::env('CDN_URL_MAP');
-                                    $host = App::env('WEB_BASE_URL');
-                                    $path = $entry->uri; // /* would be everything
-
-                                    if (!str_starts_with($path, '/')) {
-                                        $path = '/' . $path;
-                                    }
-                                    $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
-                                } catch (\Throwable $th) {
-                                    Craft::error($th->getMessage(), "INVALIDATE_STATUS");
-                                }
+                                $this->attemptCDNInvalidateAPICall($entry);
                             }
                         });
                     }
@@ -271,6 +266,27 @@ class NextBuilds extends Plugin
     /**
      * @return void
      */
+    protected function attemptCDNInvalidateAPICall($entry): void
+    {
+        Craft::warning("Attempting to invalidate CDN cache", "INVALIDATE_STATUS");
+        try {
+            $projectId = App::env('GCP_PROJECT_ID');
+            $urlMap = App::env('CDN_URL_MAP');
+            $host = App::env('WEB_BASE_URL');
+            $path = $entry->uri; // /* would be everything
+
+            if (!str_starts_with($path, '/')) {
+                $path = '/' . $path;
+            }
+            $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
+        } catch (\Throwable $th) {
+            Craft::error($th->getMessage(), "INVALIDATE_STATUS");
+        }
+    }
+
+    /**
+     * @return void
+     */
     protected function initializeElementStatusEvents(): void
     {
         Event::on(Elements::class, Elements::EVENT_BEFORE_SAVE_ELEMENT, [ElementStatusEvents::class, 'rememberPreviousStatus']);
@@ -298,10 +314,18 @@ class NextBuilds extends Plugin
      */
     protected function settingsHtml(): string
     {
+        $settings = $this->getSettings();
+        $cdn_enabled_from_env = $settings->getEnableCDNCacheInvalidation();
+
+        $cdn_determined_from_env = !is_null($cdn_enabled_from_env);
+
+
         return Craft::$app->view->renderTemplate(
             'next-builds/settings',
             [
-                'settings' => $this->getSettings()
+                'cdn_determined_from_env' => $cdn_determined_from_env,
+                'cdn_enabled_from_env' => $cdn_enabled_from_env,
+                'settings' => $settings,
             ]
         );
     }
