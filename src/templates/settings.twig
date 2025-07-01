@@ -28,22 +28,10 @@
     suggestEnvVars: true
 }) }}
 
-{% if cdn_determined_from_env %}
-    {% if cdn_enabled_from_env %}
-        <input type="checkbox" name="enableCDNCacheInvalidation" value="1" checked disabled>
-        <label style="color: grey" for="enableCDNCacheInvalidation">Enable Google Cloud CDN Cache Invalidation on Save (currently set by env)</label>
-    {% else %}
-        <input type="checkbox" name="enableCDNCacheInvalidation" value="0" disabled>
-        <label style="color: grey" for="enableCDNCacheInvalidation">Enable Google Cloud CDN Cache Invalidation on Save (currently set by env)</label>
-    {% endif %}
-{% else %}
-    {{ forms.checkbox({
-        label: "Enable Google Cloud CDN Cache Invalidation on Save",
-        name: 'enableCDNCacheInvalidation',
-        value: true,
-        checked: settings.enableCDNCacheInvalidation ?? false,
-    }) }}
-{% endif %}
+
+<input type="checkbox" name="enableCDNCacheInvalidation" value="{{ cdn_enabled_from_env ? '1' : '0' }}" {{ cdn_enabled_from_env ? 'checked' }} disabled>
+<label style="color: grey" for="enableCDNCacheInvalidation">Enable Google Cloud CDN Cache Invalidation on Save (currently set by environment variables)</label>
+
 <div class="field">
     <div class="heading">
         <label>Enabled Sections</label>

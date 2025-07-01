@@ -45,7 +45,7 @@ class Settings extends Model
 
     public function getEnableCDNCacheInvalidation(): bool|null
     {
-        return App::parseBooleanEnv('$CDN_CACHE_INVALIDATION');
+        return App::parseBooleanEnv('$ENABLE_CDN_CACHE_INVALIDATION');
     }
 
 	/**
