@@ -79,6 +79,12 @@ class NextBuilds extends Plugin
      */
     public bool $hasCpSection = false;
 
+    // Protected
+    protected const SITEIDMAP = [
+        1 => '',
+        2 => '/es'
+    ];
+
     // Public Methods
     // =========================================================================
 
@@ -161,6 +167,13 @@ class NextBuilds extends Plugin
                         $entry->uri != null
                     ) {
                         $revalidateMenu = ($entry->type->handle == "pages");
+
+                        // When spinning up a craftcms instance, singles pages seem to be resaved. We wish to skip cache invalidations on these. This seems to happen since the philosophy of CraftCMS is that singles pages are not "fast changing" so is tracked through project.yaml unlike entries of the page type.
+                        if ($entry->section->type == 'single' 
+                            && Craft::$app->projectConfig->getIsApplyingExternalChanges()
+                        ) {
+                            return;
+                        }
                         Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
                             $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
                             $isEnabledViaEnv = $this->settings->getEnableCDNCacheInvalidation();
@@ -278,6 +291,12 @@ class NextBuilds extends Plugin
             if (!str_starts_with($path, '/')) {
                 $path = '/' . $path;
             }
+
+            // add necessary prefixes for multi-site invalidation
+            if (array_key_exists($entry->siteId, self::SITEIDMAP)) {
+                $path = self::SITEIDMAP . $path;
+            }
+
             $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
         } catch (\Throwable $th) {
             Craft::error($th->getMessage(), LogCategory::CATEGORY);
