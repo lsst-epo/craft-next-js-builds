@@ -155,6 +155,7 @@ class NextBuilds extends Plugin
 		    Entry::EVENT_AFTER_SAVE,
 		    function (ModelEvent $event) {
 			    $entry = $event->sender;
+                $isBuilding = false;
 
                 try {
                     if (
@@ -167,24 +168,26 @@ class NextBuilds extends Plugin
                         $entry->uri != null
                     ) {
                         $revalidateMenu = ($entry->type->handle == "pages");
-
-                        // When spinning up a craftcms instance, singles pages seem to be resaved. We wish to skip cache invalidations on these. This seems to happen since the philosophy of CraftCMS is that singles pages are not "fast changing" so is tracked through project.yaml unlike entries of the page type.
                         if ($entry->section->type == 'single' 
                             && Craft::$app->projectConfig->getIsApplyingExternalChanges()
                         ) {
-                            return;
+                            $isBuilding = true;
+                            Craft::warning("Craft is Applying External Change", LogCategory::CATEGORY);
                         }
-                        Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
+                        Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu, $isBuilding) {
                             $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
                             $isEnabledViaEnv = $this->settings->getEnableCDNCacheInvalidation();
-                            if (isset($isEnabledViaEnv))
+
+                            // When spinning up a craftcms instance, singles pages seem to be resaved. 
+                            // We wish to skip cache invalidations on these. 
+                            // This seems to happen since the philosophy of CraftCMS is that singles pages are not "fast changing" 
+                            // so is tracked through project.yaml unlike entries of the page type.
+                            if ($isBuilding) {
+                                Craft::warning("Not invalidating CDN due to it being a CraftCMS External Change", LogCategory::CATEGORY);
+                            }
+                            elseif (isset($isEnabledViaEnv) && $isEnabledViaEnv)
                             {
-                                if ($isEnabledViaEnv)
-                                {
-                                    $this->attemptCDNInvalidateAPICall($entry);
-                                } else {
-                                    Craft::warning("Not invalidating CDN cache due to plugin settings set by environment", LogCategory::CATEGORY);
-                                }
+                                $this->attemptCDNInvalidateAPICall($entry);
                             }
                             else {
                                 Craft::warning("Not invalidating CDN cache due to plugin settings", LogCategory::CATEGORY);
@@ -286,14 +289,12 @@ class NextBuilds extends Plugin
             $projectId = App::env('GCP_PROJECT_ID');
             $urlMap = App::env('CDN_URL_MAP');
             $host = App::env('WEB_BASE_URL');
+            $siteIdMapJSON = App::env('SITE_ID_MAP_JSON');
             $path = $entry->uri; // /* would be everything
 
             if (!str_starts_with($path, '/')) {
                 $path = '/' . $path;
             }
-
-            $siteIdMap = self::SITEIDMAP;
-            $siteIdMapJSON = App::env('SITE_ID_MAP_JSON');
 
             // try to json decode site id map from a possible json environment variable
             if (!empty($siteIdMapJSON)) {
