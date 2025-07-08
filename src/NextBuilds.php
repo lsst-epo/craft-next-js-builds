@@ -292,9 +292,20 @@ class NextBuilds extends Plugin
                 $path = '/' . $path;
             }
 
+            $siteIdMap = self::SITEIDMAP;
+            $siteIdMapJSON = App::env('SITE_ID_MAP_JSON');
+
+            // try to json decode site id map from a possible json environment variable
+            if (!empty($siteIdMapJSON)) {
+                $siteIdMap = json_decode($siteIdMapJSON, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $siteIdMap = self::SITEIDMAP;
+                }
+            }
+
             // add necessary prefixes for multi-site invalidation
-            if (array_key_exists($entry->siteId, self::SITEIDMAP)) {
-                $path = self::SITEIDMAP . $path;
+            if (array_key_exists($entry->siteId, $siteIdMap)) {
+                $path = $siteIdMap[$entry->siteId] . $path;
             }
 
             $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
