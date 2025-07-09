@@ -155,7 +155,7 @@ class NextBuilds extends Plugin
 		    Entry::EVENT_AFTER_SAVE,
 		    function (ModelEvent $event) {
 			    $entry = $event->sender;
-                $isBuilding = false;
+                $isApplyingExternalChange = false;
 
                 try {
                     if (
@@ -171,10 +171,10 @@ class NextBuilds extends Plugin
                         if ($entry->section->type == 'single' 
                             && Craft::$app->projectConfig->getIsApplyingExternalChanges()
                         ) {
-                            $isBuilding = true;
+                            $isApplyingExternalChange = true; # happens during build and we want to skip CDN cache invalidations on these
                             Craft::warning("Craft is Applying External Change", LogCategory::CATEGORY);
                         }
-                        Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu, $isBuilding) {
+                        Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu, $isApplyingExternalChange) {
                             $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
                             $isEnabledViaEnv = $this->settings->getEnableCDNCacheInvalidation();
 
@@ -182,7 +182,7 @@ class NextBuilds extends Plugin
                             // We wish to skip cache invalidations on these. 
                             // This seems to happen since the philosophy of CraftCMS is that singles pages are not "fast changing" 
                             // so is tracked through project.yaml unlike entries of the page type.
-                            if ($isBuilding) {
+                            if ($isApplyingExternalChange) {
                                 Craft::warning("Not invalidating CDN due to it being a CraftCMS External Change", LogCategory::CATEGORY);
                             }
                             elseif (isset($isEnabledViaEnv) && $isEnabledViaEnv)
