@@ -9,6 +9,7 @@ namespace lsst\nextbuilds\models;
 
 use Craft;
 use craft\base\Model;
+use craft\helpers\App;
 
 /**
  * @author    Cast Iron Coding
@@ -34,9 +35,18 @@ class Settings extends Model
 	 * @var null
 	 */
 	public $activeSections = [];
+    /**
+	 * @var bool|null
+	 */
+    public $enableCDNCacheInvalidation = false;
 
     // Public Methods
     // =========================================================================
+
+    public function getEnableCDNCacheInvalidation(): bool|null
+    {
+        return App::parseBooleanEnv('$ENABLE_CDN_CACHE_INVALIDATION');
+    }
 
 	/**
      * @inheritdoc
@@ -45,7 +55,7 @@ class Settings extends Model
     {
         return [
             [['nextApiBaseUrl', 'nextSecretToken'], 'required'],
-	        [['activeSections'], 'default']
+	        [['activeSections', 'enableCDNCacheInvalidation'], 'default']
         ];
     }
 }

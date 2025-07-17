@@ -30,8 +30,10 @@ use benf\neo\elements\Block;
 
 use yii\caching\CacheInterface;
 use craft\console\Application as CraftConsoleApp;
+use craft\helpers\App;
 use lsst\nextbuilds\commands\ScheduledElements;
 use craft\services\Elements;
+use lsst\nextbuilds\LogCategory;
 /**
  * Class NextBuilds
  *
@@ -76,6 +78,12 @@ class NextBuilds extends Plugin
      * @var bool
      */
     public bool $hasCpSection = false;
+
+    // Protected
+    protected const SITEIDMAP = [
+        1 => '',
+        2 => '/es'
+    ];
 
     // Public Methods
     // =========================================================================
@@ -147,6 +155,7 @@ class NextBuilds extends Plugin
 		    Entry::EVENT_AFTER_SAVE,
 		    function (ModelEvent $event) {
 			    $entry = $event->sender;
+                $isApplyingExternalChange = false;
 
                 try {
                     if (
@@ -159,8 +168,30 @@ class NextBuilds extends Plugin
                         $entry->uri != null
                     ) {
                         $revalidateMenu = ($entry->type->handle == "pages");
-                        Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu) {
+                        if ($entry->section->type == 'single' 
+                            && Craft::$app->projectConfig->getIsApplyingExternalChanges()
+                        ) {
+                            $isApplyingExternalChange = true; # happens during build and we want to skip CDN cache invalidations on these
+                            Craft::warning("Craft is Applying External Change", LogCategory::CATEGORY);
+                        }
+                        Craft::$app->onAfterRequest(function() use ($entry, $revalidateMenu, $isApplyingExternalChange) {
                             $this->request->buildPagesFromEntry($entry->uri, $revalidateMenu);
+                            $isEnabledViaEnv = $this->settings->getEnableCDNCacheInvalidation();
+
+                            // When spinning up a craftcms instance, singles pages seem to be resaved. 
+                            // We wish to skip cache invalidations on these. 
+                            // This seems to happen since the philosophy of CraftCMS is that singles pages are not "fast changing" 
+                            // so is tracked through project.yaml unlike entries of the page type.
+                            if ($isApplyingExternalChange) {
+                                Craft::warning("Not invalidating CDN due to it being a CraftCMS External Change", LogCategory::CATEGORY);
+                            }
+                            elseif (isset($isEnabledViaEnv) && $isEnabledViaEnv)
+                            {
+                                $this->attemptCDNInvalidateAPICall($entry);
+                            }
+                            else {
+                                Craft::warning("Not invalidating CDN cache due to plugin settings", LogCategory::CATEGORY);
+                            }
                         });
                     }
                 } catch(Exception $exception) {
@@ -251,6 +282,42 @@ class NextBuilds extends Plugin
     /**
      * @return void
      */
+    protected function attemptCDNInvalidateAPICall($entry): void
+    {
+        Craft::warning("Attempting to invalidate CDN cache", LogCategory::CATEGORY);
+        try {
+            $projectId = App::env('GCP_PROJECT_ID');
+            $urlMap = App::env('CDN_URL_MAP');
+            $host = App::env('WEB_BASE_URL');
+            $siteIdMapJSON = App::env('SITE_ID_MAP_JSON');
+            $path = $entry->uri; // /* would be everything
+
+            if (!str_starts_with($path, '/')) {
+                $path = '/' . $path;
+            }
+
+            // try to json decode site id map from a possible json environment variable
+            if (!empty($siteIdMapJSON)) {
+                $siteIdMap = json_decode($siteIdMapJSON, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $siteIdMap = self::SITEIDMAP;
+                }
+            }
+
+            // add necessary prefixes for multi-site invalidation
+            if (array_key_exists($entry->siteId, $siteIdMap)) {
+                $path = $siteIdMap[$entry->siteId] . $path;
+            }
+
+            $this->request->invalidateCDNCache($projectId, $urlMap, $path, $host);
+        } catch (\Throwable $th) {
+            Craft::error($th->getMessage(), LogCategory::CATEGORY);
+        }
+    }
+
+    /**
+     * @return void
+     */
     protected function initializeElementStatusEvents(): void
     {
         Event::on(Elements::class, Elements::EVENT_BEFORE_SAVE_ELEMENT, [ElementStatusEvents::class, 'rememberPreviousStatus']);
@@ -278,10 +345,14 @@ class NextBuilds extends Plugin
      */
     protected function settingsHtml(): string
     {
+        $settings = $this->getSettings();
+        $cdn_enabled_from_env = $settings->getEnableCDNCacheInvalidation();
+
         return Craft::$app->view->renderTemplate(
             'next-builds/settings',
             [
-                'settings' => $this->getSettings()
+                'cdn_enabled_from_env' => $cdn_enabled_from_env,
+                'settings' => $settings,
             ]
         );
     }

@@ -28,6 +28,10 @@
     suggestEnvVars: true
 }) }}
 
+
+<input type="checkbox" name="enableCDNCacheInvalidation" value="{{ cdn_enabled_from_env ? '1' : '0' }}" {{ cdn_enabled_from_env ? 'checked' }} disabled>
+<label style="color: grey" for="enableCDNCacheInvalidation">Enable Google Cloud CDN Cache Invalidation on Save (currently set by environment variables)</label>
+
 <div class="field">
     <div class="heading">
         <label>Enabled Sections</label>

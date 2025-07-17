@@ -12,6 +12,8 @@ use lsst\nextbuilds\NextBuilds;
 use craft\base\Component;
 use GuzzleHttp\Client;
 
+use Google\Cloud\Compute\V1\{CacheInvalidationRule, InvalidateCacheUrlMapRequest, Client\UrlMapsClient};
+
 /**
  * @author    Cast Iron Coding
  * @package   NextBuilds
@@ -58,6 +60,59 @@ class Request extends Component
 				Craft::$app->session->setError('Incremental rebuild failed. Frontend will update after next revalidation interval.');
 			}
 		}
+	}
+
+	public function invalidateCDNCache(string $projectId, string $urlMapName, string $path = '/*', string|null $host = null): bool
+	{
+		try {
+			$urlMapsClient = new UrlMapsClient();
+	
+			$invalidateCacheRule = new CacheInvalidationRule();
+			$invalidateCacheRule->setPath($path);
+
+			if ($host != null) {
+				# strip scheme from $host if it exists (like http:// or https://)
+				$pos = strpos($host, '//');
+				if ($pos !== false) {
+					$host = substr($host, $pos + 2);
+				}
+				$invalidateCacheRule->setHost($host);
+			}
+	
+			$invalidateCacheRequest = new InvalidateCacheUrlMapRequest([
+				'project' => $projectId,
+				'url_map' => $urlMapName,
+				'cache_invalidation_rule_resource' => $invalidateCacheRule
+			]);
+		} catch (\Throwable $th) {
+			Craft::error("UrlMapsClient error: " . $th->getMessage() . "\n" . $th->getTraceAsString(), "INVALIDATE_STATUS");
+			return false;
+		}
+		
+	
+		try {
+			$operation = $urlMapsClient->invalidateCache($invalidateCacheRequest);
+	
+			$operation->pollUntilComplete(['totalPollTimeoutMillis' => 30*1000]);
+
+			Craft::warning("project_id: {$projectId}, url_map: {$urlMapName}, host: {$host}, path: {$path}", "INVALIDATE_STATUS");
+	
+			if ($operation->operationSucceeded()) {
+				Craft::warning("Cache invalidation success for URL MAP " . $urlMapName . " and path " . $path, "INVALIDATE_STATUS");
+			}
+			elseif ($operation->getError()) {
+				Craft::warning("Cache invalidation failed. Message: " . $operation->getError()->getMessage() . " Details: " . $operation->getError()->getDetails(), "INVALIDATE_STATUS");
+			}
+
+			$result = $operation->getResult();
+			Craft::warning("Invalidation result: " . print_r($result), "INVALIDATE_STATUS");
+		} catch (\Throwable $th) {
+			Craft::error("CDN Invalidation error: " . $th->getMessage() . "-" . $th->getTraceAsString(), "INVALIDATE_STATUS");
+		} finally {
+			$urlMapsClient->close();
+		}
+
+		return true;
 	}
 
 	// Protected Methods
