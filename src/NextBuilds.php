@@ -297,6 +297,7 @@ class NextBuilds extends Plugin
             }
 
             // try to json decode site id map from a possible json environment variable
+            $siteIdMap = self::SITEIDMAP;
             if (!empty($siteIdMapJSON)) {
                 $siteIdMap = json_decode($siteIdMapJSON, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
