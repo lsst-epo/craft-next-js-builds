@@ -14,7 +14,7 @@ use lsst\nextbuilds\models\Settings;
 
 use Craft;
 use craft\base\Plugin;
-use craft\elements\Entry;
+use craft\elements\{Entry, GlobalSet};
 use craft\events\MoveElementEvent;
 use craft\events\ModelEvent;
 use craft\helpers\ElementHelper;
@@ -234,9 +234,15 @@ class NextBuilds extends Plugin
                 $handle = null;
 
                 if($entry instanceof Block) {
-                    if (($owner = $entry->getOwner()) !== null) {
-                        $handle = $owner->section->handle;
-                        $entry = $entry->getOwner();
+                    $owner = $entry->getOwner();
+
+                    # We get errors if part of globalSet
+                    if ($owner && !($owner instanceof GlobalSet)) {
+                        # only try to get section handle if owner is actually an entry
+                        if ($owner instanceof Entry) {
+                            $handle = $owner->section->handle;
+                            $entry = $owner;
+                        }
                     }
                 } else if(property_exists($entry, "handle")) {
                     $handle = $entry->handle;
