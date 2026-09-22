@@ -1,7 +1,7 @@
 {# @var craft \craft\web\twig\variables\CraftVariable #}
 {#
 /**
- * Next Builds plugin for Craft CMS 3.x
+ * Next Builds plugin for Craft CMS 5.x
  *
  * Next Builds Settings.twig
  * @package   NextBuilds
@@ -40,7 +40,7 @@
             <p>Choose which sections should have incremental page builds.</p>
         </div>
     </div>
-    {% for section in craft.app.sections.allSections %}
+    {% for section in craft.app.entries.allSections %}
         <div>
             {{ forms.checkbox({
                 label: section.name,
